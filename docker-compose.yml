@@ -1,3 +1,4 @@
+# docker-compose.yml
 version: '3.8'
 
 services:
@@ -6,32 +7,42 @@ services:
       context: .
     ports:
       - "3000:3000"
+    environment:
+      - REACT_APP_AUTH_SERVICE_URL=http://localhost:3001
+      - REACT_APP_BANK_SERVICE_URL=http://localhost:3002
+      - REACT_APP_STOCK_SERVICE_URL=http://localhost:3003
     networks:
       - microservices-network
 
   auth-service:
     build:
-      context: ./auth-service
+      context: ./backend/auth-service
     ports:
       - "3001:3001"
     networks:
       - microservices-network
+    environment:
+      - CORS_ORIGIN=http://localhost:3000
 
   bank-service:
     build:
-      context: ./bank-service
+      context: ./backend/bank-service
     ports:
       - "3002:3002"
     networks:
       - microservices-network
+    environment:
+      - CORS_ORIGIN=http://localhost:3000
 
   stock-service:
     build:
-      context: ./stock-service
+      context: ./backend/stock-service
     ports:
       - "3003:3003"
     networks:
       - microservices-network
+    environment:
+      - CORS_ORIGIN=http://localhost:3000
 
 networks:
   microservices-network:

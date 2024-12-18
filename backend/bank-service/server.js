@@ -2,10 +2,15 @@ const express = require('express');
 const app = express();
 const PORT = 3002;
 const cors = require('cors');
-app.use(cors());
-let balance = 1000;
+
+// Configure CORS with specific origin
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 
 app.use(express.json());
+let balance = 1000;
 
 app.post('/deposit', (req, res) => {
   const { amount } = req.body;

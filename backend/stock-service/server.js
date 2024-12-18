@@ -2,10 +2,15 @@ const express = require('express');
 const app = express();
 const PORT = 3003;
 const cors = require('cors');
-app.use(cors());
-let stockPrice = 100;
+
+// Configure CORS with specific origin
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 
 app.use(express.json());
+let stockPrice = 100;
 
 app.post('/buy', (req, res) => {
   const { amount } = req.body;

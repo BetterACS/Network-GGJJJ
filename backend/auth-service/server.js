@@ -1,9 +1,14 @@
-
 const express = require('express');
 const app = express();
 const PORT = 3001;
 const cors = require('cors');
-app.use(cors());
+
+// Configure CORS with specific origin
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.post('/login', (req, res) => {
