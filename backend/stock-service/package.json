@@ -1,0 +1,15 @@
+{
+    "name": "stock-service",
+    "version": "1.0.0",
+    "description": "stock service for login",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js"
+    },
+    "dependencies": {
+      "express": "^4.18.1"
+    },
+    "author": "",
+    "license": "ISC"
+  }
+  
