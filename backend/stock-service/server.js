@@ -10,16 +10,19 @@ app.use(cors({
 }));
 
 app.use(express.json());
-let stockPrice = 100;
+
 
 app.post('/buy', (req, res) => {
-  const { amount } = req.body;
-  if (amount >= stockPrice) {
-    return res.status(200).json({ message: 'Stock bought successfully' });
+  const { stockPrice,balance } = req.body;
+  // console.log(stockPrice,balance);
+  if (balance >= stockPrice) {
+    return res.status(200).json({ message: 'Stock bought successfully',balance:Number(balance)-Number(stockPrice) });
   }
-  return res.status(400).json({ message: 'Insufficient funds to buy stock' });
+  return res.status(400).json({ message: 'Insufficient funds to buy stock',error: 'Insufficient funds to buy stock'});
 });
-
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
+});
 app.listen(PORT, () => {
   console.log(`Stock service running on port ${PORT}`);
 });

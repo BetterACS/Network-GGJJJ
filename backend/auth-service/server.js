@@ -18,7 +18,9 @@ app.post('/login', (req, res) => {
   }
   return res.status(401).json({ message: 'Invalid credentials' });
 });
-
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
+});
 app.listen(PORT, () => {
   console.log(`Auth service running on port ${PORT}`);
 });

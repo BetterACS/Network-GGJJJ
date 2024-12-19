@@ -3,15 +3,7 @@ const apiBaseUrlAuth = 'http://localhost:3001';
 const apiBaseUrlBank = 'http://localhost:3002';
 const apiBaseUrlStock = 'http://localhost:3003';
 
-// Helper to check if a service is available
-const checkService = async (url) => {
-  try {
-    const response = await fetch(url);
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
+
 
 export const authenticate = async (username, password) => {
   try {
@@ -21,10 +13,21 @@ export const authenticate = async (username, password) => {
       body: JSON.stringify({ username, password }),
     });
     
+    const data = await response.json();
+    
     if (!response.ok) {
-      throw new Error('Authentication failed');
+      return {
+        message: data.message || 'Invalid username or password',
+        error: true,
+        authFailed: true
+      };
     }
-    return response.json();
+    
+    return {
+      ...data,
+      error: false,
+      authFailed: false
+    };
   } catch (error) {
     console.error('Auth error:', error);
     return { 
@@ -35,7 +38,7 @@ export const authenticate = async (username, password) => {
   }
 };
 
-export const deposit = async (amount) => {
+export const deposit = async (amount,balance) => {
   try {
     // First check if user is authenticated (auth service is up)
     const authCheck = await checkService(apiBaseUrlAuth);
@@ -49,7 +52,7 @@ export const deposit = async (amount) => {
     const response = await fetch(`${apiBaseUrlBank}/deposit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify({ amount,balance }),
     });
     
     if (!response.ok) {
@@ -66,9 +69,8 @@ export const deposit = async (amount) => {
   }
 };
 
-export const buyStock = async (amount) => {
+export const buyStock = async (stockPrice,balance) => {
   try {
-    // First check if user is authenticated (auth service is up)
     const authCheck = await checkService(apiBaseUrlAuth);
     if (!authCheck) {
       return { 
@@ -77,7 +79,6 @@ export const buyStock = async (amount) => {
       };
     }
 
-    // Then check if bank service is up (required for balance check)
     const bankCheck = await checkService(apiBaseUrlBank);
     if (!bankCheck) {
       return { 
@@ -89,12 +90,9 @@ export const buyStock = async (amount) => {
     const response = await fetch(`${apiBaseUrlStock}/buy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify({ stockPrice,balance }),
     });
     
-    if (!response.ok) {
-      throw new Error('Stock purchase failed');
-    }
     return response.json();
   } catch (error) {
     console.error('Stock purchase error:', error);
@@ -102,6 +100,41 @@ export const buyStock = async (amount) => {
       message: 'Stock service is unavailable', 
       error: true,
       serviceDown: true 
+    };
+  }
+};
+const checkService = async (url) => {
+  try {
+    const response = await fetch(`${url}/health`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return response.ok;
+  } catch (error) {
+    console.error(`Service at ${url} is down:`, error);
+    return false;
+  }
+};
+
+export const checkServices = async () => {
+  try {
+    const [authCheck, bankCheck, stockCheck] = await Promise.all([
+      checkService(apiBaseUrlAuth),
+      checkService(apiBaseUrlBank),
+      checkService(apiBaseUrlStock)
+    ]);
+
+    return {
+      auth: authCheck,
+      bank: bankCheck,
+      stock: stockCheck
+    };
+  } catch (error) {
+    console.error('Error checking services:', error);
+    return {
+      auth: false,
+      bank: false,
+      stock: false
     };
   }
 };
