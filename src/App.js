@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from 'react';
-import { authenticate, deposit, buyStock, checkServices } from './Api';
+import { authenticate, deposit, buyStock, checkServices, getBalance } from './Api';
 
 
 const App = () => {
@@ -14,29 +14,46 @@ const App = () => {
     stock: false
   });
 
+  useEffect(() => {
+    const initialize = async () => {
+      const status = await checkServiceStatus(); 
+      console.log("service", status);
+    
+      let storedUser = '';
+      if (status && status.auth) { 
+        storedUser = sessionStorage.getItem('user');
+      }
+    
+      if (storedUser) {
+        setIsAuthenticated(true);
+        setUsername(storedUser);
+        if (status && status.bank) fetchBalance(storedUser);
+      }
+    };
+    
+    initialize();
+  }, []);
+
   const checkServiceStatus = async () => {
     const status = await checkServices();
-    setServicesStatus(status);
+    setServicesStatus(status); 
+    return status; 
   };
+  
 
+  const fetchBalance = async (user) => {
+    const balanceResponse = await getBalance(user);
+    if (!balanceResponse.error) {
+      setBalance(balanceResponse.balance);
+    }
+  };
+  
+ 
+  
   useEffect(() => {
     checkServiceStatus();
   }, [isAuthenticated, balance]);
-
-  useEffect(() => {
-    checkServiceStatus();
-    if (sessionStorage.getItem('isAuthenticated')){
-      setIsAuthenticated(true);
-    }
-    if (sessionStorage.getItem('balance')){
-      setBalance(sessionStorage.getItem('balance'));
-    }
-    else{
-      setBalance(0);
-      sessionStorage.setItem('balance', 0);
-    }
-  }, []);
-
+  
   const handleLogin = async () => {
     const authResponse = await authenticate(username, password);
     if (authResponse.serviceDown) {
@@ -47,18 +64,19 @@ const App = () => {
     } else {
       setIsAuthenticated(true);
       setMessage(authResponse.message);
-      sessionStorage.setItem('isAuthenticated', true);
+      sessionStorage.setItem('user', username);
+      fetchBalance(username);
       setServicesStatus(prev => ({ ...prev, auth: true }));
     }
   };
 
-  const handleDeposit = async (amount,balance) => {
+  const handleDeposit = async (amount,user) => {
     if (!isAuthenticated) {
       setMessage('Please login first');
       return;
     }
 
-    const depositResponse = await deposit(amount,balance);
+    const depositResponse = await deposit(amount,user);
     if (depositResponse.serviceDown) {
       setServicesStatus(prev => ({ ...prev, bank: false }));
     } else if (depositResponse.error) {
@@ -66,19 +84,19 @@ const App = () => {
     } else {
       console.log(depositResponse.balance );
       setBalance(depositResponse.balance);
-      sessionStorage.setItem('balance', depositResponse.balance);
+      // sessionStorage.setItem('balance', depositResponse.balance);
       setMessage(depositResponse.message);
       setServicesStatus(prev => ({ ...prev, bank: true }));
     }
   };
 
-  const handleBuyStock = async (stockPrice,balance) => {
+  const handleBuyStock = async (user,stockPrice,balance) => {
     if (!isAuthenticated) {
       setMessage('Please login first');
       return;
     }
 
-    const stockResponse = await buyStock(stockPrice,balance);
+    const stockResponse = await buyStock(user,stockPrice,balance);
     console.log(stockResponse);
     if (stockResponse.serviceDown) {
       setServicesStatus(prev => ({ ...prev, stock: false }));
@@ -87,7 +105,7 @@ const App = () => {
     } else {
       setMessage(stockResponse.message);
       setBalance(stockResponse.balance);
-      sessionStorage.setItem('balance', stockResponse.balance);
+      // sessionStorage.setItem('balance', stockResponse.balance);
       setServicesStatus(prev => ({ ...prev, stock: true }));
     }
   };
@@ -135,14 +153,14 @@ const App = () => {
           <h2 className="text-xl">Balance: {balance}฿</h2>
           <div className="space-x-2 mt-2">
             <button 
-              onClick={() => handleDeposit(500,balance)}
+              onClick={() => handleDeposit(500,username)}
               disabled={!servicesStatus.bank || !servicesStatus.auth}
               className="bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
             >
               Deposit 500
             </button>
             <button 
-              onClick={() => handleBuyStock(200,balance)}
+              onClick={() => handleBuyStock(username,200,balance)}
               disabled={!servicesStatus.stock || !servicesStatus.bank || !servicesStatus.auth}
               className="bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
             >
